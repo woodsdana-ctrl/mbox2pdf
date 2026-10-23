@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+
+# Project data — never commit mail archives or generated output
+*.pst
+work/
+output/
+
+# Personal assistant settings (CLAUDE.md itself is shared)
+.claude/
+CLAUDE.local.md
+
+# Offline mail and spool data
+*.mbox
+*.eml
+*.zip

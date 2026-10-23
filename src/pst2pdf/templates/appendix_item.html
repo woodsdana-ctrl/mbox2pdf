@@ -1,0 +1,59 @@
+{#-
+  Header sheet in front of each item in the appendix volumes (--appendix-over).
+  An attachment in the message volumes sits under its message, so it needs no
+  sheet; here that context is gone, so this page says what the item is and
+  which messages carried it. It quotes no page numbers, so it is rendered once,
+  before planning, and always fits on one page.
+  Context: item (number, not printed), filename, size, type, method, pages
+  (phrase, "" when unknown), messages (count of carrying messages), carriers
+  (the first few: date, subject, attachments), others (how many more),
+  request_id. Like every released page it prints no message number, item
+  number or count of messages, any of which would tell the requester how
+  much was collected; messages and others only choose the wording, and a
+  message is named by date and subject.
+-#}
+{% extends "_base.html" %}
+{% block style %}
+  .sheet { margin-top: 3cm; }
+  .eyebrow { font-size: 10pt; color: #666; margin: 0 0 4px 0; letter-spacing: 0.02em; }
+  h1.att { font-size: 26pt; margin: 0 0 18px 0; }
+  .filename { font-size: 14pt; font-weight: 600; margin: 0 0 14px 0; overflow-wrap: anywhere; }
+  table.kv { margin-bottom: 20px; }
+  table.kv th { padding-right: 18px; }
+  .rule { border: 0; border-top: 1px solid #ccc; margin: 18px 0; }
+  .notice {
+    border: 1px solid #c9b48a; background: #fbf6ea; border-radius: 4px;
+    padding: 10px 14px; margin: 0 0 18px 0;
+  }
+  .notice p { margin: 0; }
+  .parent h2 { margin-top: 0; }
+{% endblock %}
+{% block body %}
+<div class="sheet">
+  <p class="eyebrow">Attachment moved out of the message volumes</p>
+  <h1 class="att">Attachment</h1>
+  <p class="filename">{{ filename }}</p>
+  <div class="notice">
+    <p>The pages after this sheet are this attachment. A one-page note stands in its place behind
+    {{ "the message listed below" if messages == 1 else "every message it was attached to" }}.</p>
+  </div>
+  <table class="kv">
+    <tr><th>Size</th><td>{{ size }}</td></tr>
+    <tr><th>Type</th><td>{{ type }}</td></tr>
+    <tr><th>Conversion</th><td>{{ method }}</td></tr>
+    <tr><th>Pages</th><td>{% if pages %}{{ pages }} follow this sheet{% else %}Follow this sheet{% endif %}</td></tr>
+  </table>
+  <hr class="rule">
+  <div class="parent">
+    <h2>Attached to {{ "the message" if messages == 1 else "these messages" }}</h2>
+    <table class="kv">
+    {%- for c in carriers %}
+      <tr><th class="nowrap">{{ c.date }}</th><td>{{ c.subject }}</td><td class="nowrap">&nbsp;&nbsp;{{ c.attachments }}</td></tr>
+    {%- endfor %}
+    </table>
+    {%- if others %}
+    <p>It was also attached to other messages, each with a note pointing here.</p>
+    {%- endif %}
+  </div>
+</div>
+{% endblock %}

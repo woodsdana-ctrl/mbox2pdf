@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pst2pdf"
+version = "0.2.0"
+description = "Convert an Outlook .pst archive into Bates-numbered PDF review volumes for redaction"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = [
+    "jinja2>=3.1",
+    "weasyprint>=61",
+    "pypdf>=6",
+    "pdfplumber>=0.11",
+    "reportlab>=4",
+    "Pillow>=10",
+    "pillow-heif>=0.20",
+    "extract-msg>=0.50",
+    "icalendar>=6",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "markdown-it-py>=3",  # scripts/readme_docs.py
+]
+
+[project.scripts]
+pst2pdf = "pst2pdf.cli:main"
+mbox2pdf = "pst2pdf.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pst2pdf"]

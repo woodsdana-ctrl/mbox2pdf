@@ -1,0 +1,72 @@
+{#-
+  Shared skeleton for every page pst2pdf renders. Child templates fill the
+  blocks below; the CSS here is the text-layer contract:
+
+  * one font (DejaVu Sans, forced onto every element so mail-body styles
+    cannot pull in a second one), and Noto Sans CJK only for the Chinese,
+    Japanese and Korean characters DejaVu has no glyph for. Emoji come from
+    Noto Color Emoji by fontconfig's fallback and must not be named here: it
+    has glyphs for digits, # and * (keycap bases) and would take them over,
+    drawing dates and Bates numbers as emoji,
+  * no ligatures and no hyphenation, so what Acrobat's search finds is
+    exactly the characters the reviewer sees,
+  * no PDF bookmarks generated from headings (assemble.py writes its own,
+    content-free outline) and no <title>, so nothing lands in metadata.
+-#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: {% block page_size %}Letter{% endblock %};
+    margin: 1.5cm 1.5cm 1.8cm 1.5cm;
+    {% block page_margin_boxes %}{% endblock %}
+  }
+  * {
+    font-family: "DejaVu Sans", "Noto Sans CJK SC" !important;
+    font-variant-ligatures: none !important;
+    hyphens: none !important;
+  }
+  html { font-variant-ligatures: none; hyphens: none; }
+  body { font-size: 10pt; color: #222; line-height: 1.35; margin: 0; }
+  h1, h2, h3, h4, h5, h6 { bookmark-level: none; }
+  h1 { font-size: 20pt; font-weight: bold; margin: 0 0 10px 0; }
+  h2 { font-size: 12pt; font-weight: bold; margin: 18px 0 6px 0; }
+  p { margin: 0 0 8px 0; }
+  .muted { color: #666; }
+  .small { font-size: 8.5pt; }
+  .nowrap { white-space: nowrap; overflow-wrap: normal; }
+  /* Key/value blocks used by headers and cover sheets. */
+  table.kv { border-collapse: collapse; }
+  table.kv th {
+    text-align: left; vertical-align: top; padding: 1px 12px 1px 0;
+    color: #555; font-weight: 600; white-space: nowrap;
+  }
+  table.kv td { padding: 1px 0; vertical-align: top; }
+  /* One person per span: a name never wraps inside itself, lists wrap between people. */
+  .addr { white-space: nowrap; overflow-wrap: normal; }
+  /* Data tables (index, exceptions, coverage). */
+  table.grid { border-collapse: collapse; width: 100%; }
+  table.grid thead { display: table-header-group; }
+  table.grid th {
+    text-align: left; vertical-align: bottom; font-weight: 600;
+    border-bottom: 1.5px solid #444; padding: 3px 5px; background: #f2f2f2;
+  }
+  table.grid td { vertical-align: top; border-bottom: 0.5px solid #ccc; padding: 3px 5px; }
+  table.grid tr { page-break-inside: avoid; break-inside: avoid; }
+  table.grid td.num, table.grid th.num { text-align: right; }
+  /* "The search" (_search.html): the query exactly as given, spaces and line breaks kept. */
+  p.search-lead { margin: 0 0 5px 0; }
+  p.search-note { color: #555; margin: 6px 0 0 0; }
+  table.kv.search { width: 100%; }
+  table.kv.search th { width: 1%; }
+  .query, .query-inline { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .query { border: 1px solid #bbb; background: #f7f7f7; border-radius: 3px; padding: 4px 8px; }
+  {% block style %}{% endblock %}
+</style>
+</head>
+<body>
+{% block body %}{% endblock %}
+</body>
+</html>

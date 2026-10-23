@@ -1,0 +1,18 @@
+{#-
+  Stands in for an attachment that could not be turned into pages. Context
+  adds: reason, keep_natives, natives_dir, listed (is it in the exceptions
+  table? not when conversion was turned off for the run).
+-#}
+{% extends "_attachment_page.html" %}
+{% block eyebrow %}This attachment could not be converted{% endblock %}
+{% block notice %}
+  <div class="notice">
+    <p style="white-space: pre-line"><strong>Not included.</strong> This file could not be converted to pages because {{ reason }}.</p>
+    <p>{% if listed %}It is listed in the exceptions table behind the index at the front of Volume 01.{% endif %}
+    {%- if keep_natives %} The original file is in the folder &ldquo;{{ natives_dir }}&rdquo;. It has not been redacted.
+    {%- else %} The original file was not included in this delivery. Ask whoever prepared these volumes if it is needed.{% endif %}</p>
+  </div>
+{% endblock %}
+{% block details %}
+    <tr><th>Pages</th><td>None</td></tr>
+{% endblock %}

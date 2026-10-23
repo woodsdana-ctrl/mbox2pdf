@@ -1,0 +1,98 @@
+{#-
+  00 START HERE.pdf for a triage run (--triage): what the folder is for and
+  what the reviewers do with the index. Context: request_id, prepared, counts,
+  volumes, first_volume, natives_dir, index_name, manifest_name, files,
+  total_size, by_type (rows: type, files, size), decisions (was a decisions
+  file applied?), order, search (None or searchreport.context()). Nothing in this folder is for release, so file
+  names are fine here.
+-#}
+{% extends "_base.html" %}
+{% block page_margin_boxes %}
+    @bottom-left { content: "{{ request_id }} · Start here · triage copy"; font-family: "DejaVu Sans"; font-size: 8pt; color: #777; }
+{% endblock %}
+{% block style %}
+  body { font-size: 9.5pt; }
+  h1 { font-size: 18pt; margin-bottom: 2px; }
+  .lead { color: #555; margin-bottom: 12px; }
+  h2 { font-size: 11pt; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 14px 0 6px 0; }
+  ul.files { margin: 0 0 6px 0; padding-left: 18px; }
+  ul.files li { margin-bottom: 2px; }
+  p.found { margin: 0 0 5px 0; }
+  ol.steps { margin: 0; padding-left: 20px; }
+  ol.steps li { margin-bottom: 6px; }
+  .keep { border: 1px solid #c9b48a; background: #fbf6ea; border-radius: 4px; padding: 8px 12px; margin: 8px 0 0 0; }
+  .keep p { margin: 0; }
+  table.types { width: auto; min-width: 50%; }
+  table.types td, table.types th { padding: 2px 12px 2px 0; }
+{% endblock %}
+{% block body %}
+  <h1>Start here: triage copy</h1>
+  <p class="lead">Attachment triage for {{ request_id }}, prepared {{ prepared }}.</p>
+
+  <div class="keep">
+    <p><strong>Nothing in this folder is for release, and these volumes are not for redaction.</strong>
+      This run is for deciding which attachments to produce. Once you send your decisions back, a production run
+      makes new volumes with the attachments you chose, and those are the ones to redact.</p>
+  </div>
+
+  <h2>What is in this folder</h2>
+  <ul class="files">
+    <li><strong>{{ counts.volumes }} triage volume{{ "" if counts.volumes == 1 else "s" }}</strong>
+      ({% for v in volumes %}{{ v.name }}.pdf{% if not loop.last %}, {% endif %}{% endfor %}).
+      Every message, in order, with an index at the front of {{ first_volume }}. Where a message had an attachment,
+      a one-page note names the file it was saved as, such as A0001. The pages are not numbered.</li>
+    <li><strong>{{ natives_dir }}</strong>: {{ files | thousands }} file{{ "" if files == 1 else "s" }} ({{ total_size }}),
+      each attachment once, exactly as it was sent. Each name starts with the file&rsquo;s ID. They are not redacted.</li>
+    <li><strong>{{ index_name }}</strong>: one row for each file, to open in Excel and fill in.</li>
+    <li><strong>{{ manifest_name }}</strong>: a technical record of this run.</li>
+  </ul>
+
+  <h2>What to do</h2>
+  <ol class="steps">
+    <li><strong>Open the index in Excel.</strong> Each row is one file: its ID, its name, its type and size,
+      how many messages carried it, and the date, sender and subject of the first of them. Sort and filter it
+      as you like.</li>
+    <li><strong>Look at what you need to.</strong> Open a file from the folder by its ID, or read the message
+      it came with in the triage volumes.</li>
+    <li><strong>Mark what is not to be produced.</strong> Type <strong>omit</strong> in the decision column
+      and your reason in the note column. The note is printed, exactly as you write it, on the page where the
+      attachment was and in the list of exceptions at the front of the production, so write it as you want a
+      requester to read it. Leave the decision blank for everything to be produced. For a report sent again
+      and again, <strong>latest</strong> produces only the most recent copy.</li>
+    <li><strong>Save and send it back.</strong> Save the index as a CSV file and send it back to whoever prepared this folder.
+      Deleting or renaming files in the folder changes nothing: only the index does.</li>
+  </ol>
+
+  {%- include "_search.html" %}
+
+  <h2>What this run found</h2>
+  <p class="found">Messages: {{ counts.messages | thousands }}
+    {%- if counts.messages_found and counts.messages_found != counts.messages %}
+    ({{ counts.messages_found | thousands }} in the archive, {{ counts.duplicates_removed | thousands }}
+    {{ "an extra copy" if counts.duplicates_removed == 1 else "extra copies" }} shown once){% endif %}.
+    Order:
+    {%- if order == "thread" %} grouped by conversation, oldest conversation first.
+    {%- elif order == "chrono" %} by date, oldest first.
+    {%- else %} by mailbox folder, then by date.{% endif %}</p>
+  <p class="found">Attachments: {{ counts.attachments | thousands }} attached, {{ files | thousands }} different
+    file{{ "" if files == 1 else "s" }} in the folder.
+    {%- if counts.attachments_containers %} {{ counts.attachments_containers | thousands }}
+    {{ "was a zip archive whose files are" if counts.attachments_containers == 1 else "were zip archives whose files are" }}
+    in the folder one by one.{% endif %}
+    {%- if counts.attachments_withheld %} {{ counts.attachments_withheld | thousands }}
+    {{ "was an earlier copy" if counts.attachments_withheld == 1 else "were earlier copies" }} of a recurring report, withheld as
+    you directed and not in the folder.{% endif %}
+    {%- if counts.attachments_omitted %} {{ counts.attachments_omitted | thousands }} {{ "was" if counts.attachments_omitted == 1 else "were" }}
+    marked omit and {{ "is" if counts.attachments_omitted == 1 else "are" }} not in the folder.{% endif %}
+    {%- if decisions %} The decisions you already sent are shown in the index, with what each one did.{% endif %}</p>
+  {%- if by_type %}
+  <table class="grid types">
+    <thead><tr><th>Type</th><th class="num">Files</th><th class="num">Size</th></tr></thead>
+    <tbody>
+    {%- for t in by_type %}
+      <tr><td>{{ t.type }}</td><td class="num">{{ t.files | thousands }}</td><td class="num">{{ t.size }}</td></tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  {%- endif %}
+{% endblock %}

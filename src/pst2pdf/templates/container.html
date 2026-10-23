@@ -1,0 +1,26 @@
+{#-
+  Cover sheet for a zip archive whose files were expanded into attachments of
+  their own. Context adds: files (count), first_child, last_child (attachment
+  indexes), skipped (list of "name: reason" lines).
+-#}
+{% extends "_attachment_page.html" %}
+{% block eyebrow %}This attachment is a zip archive{% endblock %}
+{% block notice %}
+  <div class="notice">
+    <p><strong>This attachment is a zip archive.</strong>
+      {%- if files == 1 %} Its 1 file follows as attachment {{ first_child }} of this message.
+      {%- elif files %} Its {{ files }} files follow as attachments {{ first_child }} to {{ last_child }} of this message.
+      {%- else %} None of its files could be shown.{% endif %}</p>
+    {%- if skipped %}
+    <p>Not shown from inside the archive:</p>
+    <ul>
+      {%- for line in skipped %}
+      <li>{{ line }}</li>
+      {%- endfor %}
+    </ul>
+    {%- endif %}
+  </div>
+{% endblock %}
+{% block details %}
+    <tr><th>Pages</th><td>None of its own. {% if files %}Its files follow as attachments {% if files == 1 %}{{ first_child }}{% else %}{{ first_child }} to {{ last_child }}{% endif %}.{% endif %}</td></tr>
+{% endblock %}

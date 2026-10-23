@@ -1,0 +1,7 @@
+# Term list used to pre-mark premark-sample.pdf. Fictional names only.
+# Format: [category]  text  [+variants] [+first]   or   [pattern]  name
+[student]  Jane Doe +variants
+[parent]   Robert Doe
+[pattern]  phone
+[pattern]  dob
+[pattern]  ssn

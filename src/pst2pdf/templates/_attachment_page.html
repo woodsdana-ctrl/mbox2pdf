@@ -1,0 +1,49 @@
+{#-
+  Shared layout for the one-page sheets that stand in place of an
+  attachment's pages: placeholder, cross-reference, zip contents.
+  Context: att (see report._attachment_ref), msg (report._message_ref).
+  A released page never gives a message number, which would tell the
+  requester how many messages were collected, so a message is named by its
+  date and subject.
+-#}
+{% extends "_base.html" %}
+{% block style %}
+  .sheet { margin-top: 3cm; }
+  .eyebrow { font-size: 10pt; color: #666; margin: 0 0 4px 0; letter-spacing: 0.02em; }
+  h1.att { font-size: 26pt; margin: 0 0 18px 0; }
+  .filename { font-size: 14pt; font-weight: 600; margin: 0 0 14px 0; overflow-wrap: anywhere; }
+  table.kv { margin-bottom: 20px; }
+  table.kv th { padding-right: 18px; }
+  .rule { border: 0; border-top: 1px solid #ccc; margin: 18px 0; }
+  .notice {
+    border: 1px solid #c9b48a; background: #fbf6ea; border-radius: 4px;
+    padding: 10px 14px; margin: 0 0 18px 0;
+  }
+  .notice p { margin: 0 0 6px 0; }
+  .notice p:last-child { margin-bottom: 0; }
+  .parent h2 { margin-top: 0; }
+{% endblock %}
+{% block body %}
+<div class="sheet">
+  <p class="eyebrow">{% block eyebrow %}Attachment{% endblock %}</p>
+  <h1 class="att">Attachment {{ att.index }} of {{ att.total }}</h1>
+  <p class="filename">{{ att.filename }}</p>
+  {% block notice %}{% endblock %}
+  <table class="kv">
+    <tr><th>Size</th><td>{{ att.size }}</td></tr>
+    <tr><th>Type</th><td>{{ att.type }}</td></tr>
+    {% block details %}
+    <tr><th>Conversion</th><td>{{ att.method }}</td></tr>
+    <tr><th>Pages</th><td>{% if att.pages %}{{ att.pages }} follow this sheet{% else %}Follow this sheet{% endif %}</td></tr>
+    {% endblock %}
+  </table>
+  <hr class="rule">
+  <div class="parent">
+    <h2>Attached to the message</h2>
+    <table class="kv">
+      <tr><th>Date</th><td class="nowrap">{{ msg.date }}</td></tr>
+      <tr><th>Subject</th><td>{{ msg.subject }}</td></tr>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{#-
+  The exceptions table: front matter behind the index in Volume 01, so its
+  filenames go through the same redaction pass as everything else. Context:
+  request_id, prepared, keep_natives, natives_dir, bates (are pages
+  numbered?), col_widths, attachment_rows, withheld_rows (latest), withheld_at,
+  omitted_rows (omit), message_rows, rows.
+-#}
+{% extends "_base.html" %}
+{% block page_size %}Letter landscape{% endblock %}
+{% block page_margin_boxes %}
+    @bottom-center { content: "Exceptions, page " counter(page) " of " counter(pages); font-family: "DejaVu Sans"; font-size: 8pt; color: #777; }
+{% endblock %}
+{% block style %}
+  body { font-size: 8.5pt; }
+  h1 { font-size: 16pt; margin-bottom: 2px; }
+  .lead { color: #555; margin-bottom: 10px; }
+  table.grid { table-layout: fixed; }
+  td.seq, td.bates, td.date, td.volume { white-space: nowrap; }
+  td.filename { overflow-wrap: anywhere; }
+{% endblock %}
+{% block body %}
+  <h1>Exceptions</h1>
+  <p class="lead">
+    {{ request_id }}
+    {%- if attachment_rows %} &middot; {{ attachment_rows }} attachment{{ "" if attachment_rows == 1 else "s" }} could not be
+    converted to pages{% endif %}
+    {%- if withheld_rows %} &middot; {{ withheld_rows }} attachment{{ "" if withheld_rows == 1 else "s" }} {{ withheld_at }}{% endif %}
+    {%- if omitted_rows %} &middot; {{ omitted_rows }} attachment{{ "" if omitted_rows == 1 else "s" }} not included{% endif %}
+    {%- if message_rows %} &middot; {{ message_rows }} message{{ "" if message_rows == 1 else "s" }} could not be laid out{% endif %}
+    &middot; prepared {{ prepared }}
+  </p>
+  <p>Each item below is represented in the volumes by a page that names it and the reason.
+    {% if bates %}The message number and page number identify the message.
+    {%- else %}The message number identifies the message; it is shown in Acrobat&rsquo;s bookmarks.{% endif %}
+    {%- if attachment_rows %}
+    {%- if keep_natives %} The original attachment files are in the folder &ldquo;{{ natives_dir }}&rdquo; and have not been redacted.
+    {%- else %} The original attachment files were not included in this delivery. Ask whoever prepared these volumes if one is needed.{% endif %}
+    {%- endif %}</p>
+
+  <table class="grid">
+    <colgroup>
+      {%- for width in col_widths %}
+      <col style="width: {{ width }}%">
+      {%- endfor %}
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="num">Msg.</th>{% if bates %}<th>Page</th>{% endif %}<th>Volume</th><th>Date</th>
+        <th>Attachment</th><th>Size</th><th>Type</th><th>Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+    {%- for r in rows %}
+      <tr>
+        <td class="seq num">{{ r.seq }}</td>
+        {%- if bates %}
+        <td class="bates">{{ r.bates }}</td>
+        {%- endif %}
+        <td class="volume">{{ r.volume }}</td>
+        <td class="date">{{ r.date }}</td>
+        <td class="filename">{{ r.filename }}</td>
+        <td>{{ r.size }}</td>
+        <td>{{ r.type }}</td>
+        <td>{{ r.reason }}</td>
+      </tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+{% endblock %}

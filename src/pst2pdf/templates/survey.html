@@ -1,0 +1,156 @@
+{#-
+  Attachment survey.pdf (--survey): how many pages a full run would make and
+  which attachments fill them, for the reviewers and the operator to decide what to
+  do with very long attachments before any volumes are built. Context:
+  request_id, prepared, budget (model.PageBudget), top (survey._top_context),
+  by_type, what_if, messages_found, duplicates_removed, render_failures,
+  attachment_exceptions, dedup_attachments, convert_attachments, settings,
+  csv_name, search (None or searchreport.context()). It names attachments, so it is kept back like START HERE.
+-#}
+{% extends "_base.html" %}
+{% block page_margin_boxes %}
+    @bottom-left { content: "{{ request_id }} · Attachment survey"; font-family: "DejaVu Sans"; font-size: 8pt; color: #777; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "DejaVu Sans"; font-size: 8pt; color: #777; }
+{% endblock %}
+{% block style %}
+  body { font-size: 9.5pt; }
+  h1 { font-size: 18pt; margin-bottom: 2px; }
+  .lead { color: #555; margin-bottom: 10px; }
+  h2 { font-size: 11pt; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 14px 0 6px 0; }
+  .keep { border: 1px solid #c9b48a; background: #fbf6ea; border-radius: 4px; padding: 8px 12px; margin: 8px 0 0 0; }
+  .keep p { margin: 0; }
+  table.kv th { font-weight: 600; }
+  table.kv td.num { text-align: right; padding-right: 10px; white-space: nowrap; }
+  table.grid { font-size: 8.5pt; }
+  table.fixed { table-layout: fixed; }
+  table.narrow { width: auto; min-width: 70%; }
+  td.filename { overflow-wrap: anywhere; }
+  td.nowrap { white-space: nowrap; }
+  .note { color: #555; margin-top: 6px; }
+{% endblock %}
+{% block body %}
+  <h1>Attachment survey</h1>
+  <p class="lead">{{ request_id }}, prepared {{ prepared }}. A page count made before any volumes are built.</p>
+  <div class="keep">
+    <p><strong>Keep this back.</strong> This survey names attachments and is for planning only. No volumes were
+      made, and nothing here is for release.</p>
+  </div>
+
+  <h2>In short</h2>
+  <p>A full run with these settings would make about <strong>{{ budget.total_pages | thousands }}
+    page{{ "" if budget.total_pages == 1 else "s" }} in {{ budget.volumes }} volume{{ "" if budget.volumes == 1 else "s" }}</strong>
+    {%- if budget.appendix_volumes %} of messages and <strong>{{ budget.appendix_volumes }} attachment volume{{ "" if budget.appendix_volumes == 1 else "s" }}</strong>{% endif %}
+    of up to {{ budget.volume_pages | thousands }} pages each.
+    {%- if top.attachment_pages %} Attachments would fill {{ top.attachment_pages | thousands }} of those pages ({{ top.attachment_share }}).
+    {%- if top.count %} The {{ "largest attachment alone" if top.count == 1 else ((top.count ~ " largest attachments") if top.count < top.with_pages else ("all " ~ top.count ~ " attachments with pages")) }}
+    would fill {{ top.top_pages | thousands }} ({{ top.top_share }}).{% endif %}
+    {%- endif %}</p>
+  <table class="kv">
+    <tr><th>Messages</th><td class="num">{{ budget.messages | thousands }}</td>
+      <td>laid out on {{ budget.message_pages | thousands }} page{{ "" if budget.message_pages == 1 else "s" }}
+      {%- if duplicates_removed %} (the archive held {{ messages_found | thousands }}; {{ duplicates_removed | thousands }}
+      extra {{ "copy is" if duplicates_removed == 1 else "copies are" }} shown once){% endif %}</td></tr>
+    <tr><th>Attachments</th><td class="num">{{ budget.attachment_slots | thousands }}</td>
+      <td>attached in all, {{ budget.distinct_attachments | thousands }} different file{{ "" if budget.distinct_attachments == 1 else "s" }}</td></tr>
+    <tr><th>Attachment pages</th><td class="num">{{ budget.attachment_pages | thousands }}</td>
+      <td>{% if dedup_attachments %}a file attached to several messages is counted once{% else %}a file attached to several messages is counted every time{% endif %}</td></tr>
+    <tr><th>Notes</th><td class="num">{{ budget.note_pages | thousands }}</td>
+      <td>one-page note{{ "" if budget.note_pages == 1 else "s" }} standing in for {% if dedup_attachments %}repeated attachments and {% endif %}attachments with no pages of their own
+      {%- if budget.appendix_over is not none %}, pointing to an attachment volume, or heading an attachment there{% endif %}</td></tr>
+    <tr><th>Index</th><td class="num">{{ budget.front_matter_pages | thousands }}</td>
+      <td>page{{ "" if budget.front_matter_pages == 1 else "s" }} at the front of Volume 01{% if budget.exceptions %}, with the list of exceptions{% endif %}</td></tr>
+    {%- if budget.appendix_over is not none %}
+    <tr><th>Attachment volumes</th><td class="num">{{ budget.appendix_pages | thousands }}</td>
+      <td>page{{ "" if budget.appendix_pages == 1 else "s" }} holding {{ budget.appendix_items | thousands }} attachment{{ "" if budget.appendix_items == 1 else "s" }}
+      {%- if budget.appendix_over %} longer than {{ budget.appendix_over | thousands }} page{{ "" if budget.appendix_over == 1 else "s" }}{% endif %}, each behind a one-page header
+      (their pages are counted in the rows above)</td></tr>
+    {%- endif %}
+    <tr><th>Total</th><td class="num"><strong>{{ budget.total_pages | thousands }}</strong></td>
+      <td>in {{ budget.volumes }} volume{{ "" if budget.volumes == 1 else "s" }}
+      {%- if budget.appendix_volumes %} of messages and {{ budget.appendix_volumes }} attachment volume{{ "" if budget.appendix_volumes == 1 else "s" }}{% endif %}</td></tr>
+  </table>
+  {%- if not convert_attachments and budget.attachment_slots %}
+  <p class="note">Attachments were not converted for this survey, so each counts as a one-page note. Run the survey
+    again with conversion on to see how long they are.</p>
+  {%- endif %}
+  {%- if attachment_exceptions or render_failures or intake_exceptions %}
+  <p class="note">
+    {%- if attachment_exceptions %}{{ attachment_exceptions | thousands }} attachment{{ " could" if attachment_exceptions == 1 else "s could" }}
+    not be converted. Each would appear as a one-page note giving the reason and would be listed behind the index.{% endif %}
+    {%- if intake_exceptions %} {{ intake_exceptions | thousands }} message(s) have intake exceptions; inspect the internal intake report.{% endif %}
+    {%- if render_failures %} {{ render_failures | thousands }} message{{ " could" if render_failures == 1 else "s could" }} only be shown as a header.{% endif %}</p>
+  {%- endif %}
+
+  {%- if by_type %}
+  <h2>Attachments by type</h2>
+  <table class="grid narrow">
+    <thead><tr><th>Type</th><th class="num">Files</th><th class="num">Attached</th><th class="num">Pages</th><th class="num">Share of all pages</th></tr></thead>
+    <tbody>
+    {%- for t in by_type %}
+      <tr><td>{{ t.label }}</td><td class="num">{{ t.attachments | thousands }}</td><td class="num">{{ t.copies | thousands }}</td>
+        <td class="num">{{ t.pages | thousands }}</td><td class="num">{{ t.share }}</td></tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  <p class="note">Files counts different files; Attached counts every message that carried one.</p>
+  {%- endif %}
+
+  {%- if top.rows %}
+  <h2>The {{ top.count }} largest attachment{{ "" if top.count == 1 else "s" }}</h2>
+  <p>Ranked by the pages each would put in the volumes.
+    {% if dedup_attachments %}A file attached to several messages is shown in full once; each later copy is a one-page note
+    pointing back to it.{% else %}A file attached to several messages is shown in full every time.{% endif %}
+    Msg. is the number of the first message that carried it.</p>
+  <table class="grid fixed">
+    <colgroup>
+      <col style="width: 4%"><col style="width: 36%"><col style="width: 11%"><col style="width: 8%">
+      <col style="width: 9%"><col style="width: 10%"><col style="width: 7%"><col style="width: 15%">
+    </colgroup>
+    <thead><tr><th class="num">#</th><th>Attachment</th><th>Type</th><th class="num">Pages</th><th class="num">Attached</th>
+      <th class="num">Pages in volumes</th><th class="num">Share</th><th>Msg., date</th></tr></thead>
+    <tbody>
+    {%- for r in top.rows %}
+      <tr><td class="num">{{ r.rank }}</td><td class="filename">{{ r.filename }}</td><td>{{ r.type }}</td>
+        <td class="num">{{ r.pages | thousands }}</td><td class="num">{{ r.copies | thousands }}</td>
+        <td class="num">{{ r.pages_in_volumes | thousands }}</td><td class="num">{{ r.share }}</td>
+        <td class="nowrap">{{ r.first_seq }}, {{ r.first_date }}</td></tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  {%- endif %}
+
+  <h2>If long attachments were set aside</h2>
+  {%- if budget.appendix_over is not none %}
+  <p>This survey already sets {% if budget.appendix_over %}attachments longer than {{ budget.appendix_over | thousands }}
+    page{{ "" if budget.appendix_over == 1 else "s" }}{% else %}every attachment with pages{% endif %} aside in attachment volumes, as
+    counted above. To compare other cut-offs, run the survey again without that setting.</p>
+  {%- elif top.rows %}
+  <p>Very long attachments, such as logs or data exports, can be moved out of the message volumes into volumes of
+    their own, to be reviewed or withheld separately. The table shows what each cut-off would do. Each attachment
+    moved out is assumed to leave a one-page note in its place, and a file attached several times is moved as a whole.</p>
+  <table class="grid narrow">
+    <thead><tr><th>Longer than</th><th class="num">Attachments</th><th class="num">Pages moved out</th>
+      <th class="num">Pages left in the message volumes</th><th class="num">Volumes left (about)</th></tr></thead>
+    <tbody>
+    {%- for w in what_if %}
+      <tr><td>{{ w.threshold | thousands }} pages</td><td class="num">{{ w.attachments | thousands }}</td>
+        <td class="num">{{ w.pages_moved | thousands }}</td><td class="num">{{ w.pages_left | thousands }}</td>
+        <td class="num">{{ w.volumes_left }}</td></tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  {%- else %}
+  <p>No attachment has pages of its own in this run, so there is nothing to set aside.</p>
+  {%- endif %}
+
+  {%- include "_search.html" %}
+
+  <h2>How this was counted</h2>
+  <p>Every message was laid out and every attachment converted just as a full run would do it, and the pages were
+    counted. The index at the front of Volume 01 was laid out too. Notes that stand in for an attachment are
+    counted as one page each, which is what they are. A full run with the same settings should come within a few
+    pages of this total. The START HERE page is not counted: it is a separate file.</p>
+  <p>Settings: {{ settings | join("; ") }}.</p>
+  <p>{{ csv_name }} lists every attachment, largest first, and opens in Excel. Its sha256 column identifies each
+    file exactly.</p>
+{% endblock %}

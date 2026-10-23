@@ -1,0 +1,20 @@
+{#-
+  --triage: stands where an attachment was, naming the original file it was
+  written as. Context adds: file_id ("A0042"), file_name (its name in the
+  folder), natives_dir, messages (how many messages carried the same file).
+-#}
+{% extends "_attachment_page.html" %}
+{% block eyebrow %}This attachment is a separate file{% endblock %}
+{% block notice %}
+  <div class="notice">
+    <p><strong>Not converted.</strong> The original file is <strong>{{ file_id }}</strong> in the folder
+      &ldquo;{{ natives_dir }}&rdquo;, named &ldquo;{{ file_name }}&rdquo;.</p>
+    {%- if messages > 1 %}
+    <p>The same file was attached to {{ messages | thousands }} messages. It is in the folder once.</p>
+    {%- endif %}
+  </div>
+{% endblock %}
+{% block details %}
+    <tr><th>File</th><td>{{ file_id }}</td></tr>
+    <tr><th>Pages</th><td>None in this volume</td></tr>
+{% endblock %}

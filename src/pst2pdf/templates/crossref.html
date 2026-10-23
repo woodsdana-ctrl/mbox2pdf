@@ -1,0 +1,21 @@
+{#-
+  Points at the first copy of an identical attachment. Context adds: bates
+  (are pages numbered?), first (message ref, named by date and subject, never
+  by number), first_range (text, "" when
+  pages are unnumbered), first_volume (file name or "").
+-#}
+{% extends "_attachment_page.html" %}
+{% block eyebrow %}This attachment appears earlier{% endblock %}
+{% block notice %}
+  <div class="notice">
+    <p><strong>Identical to the attachment
+      {%- if bates %} at {{ first_range }}{% if first_volume %} in {{ first_volume }}{% endif %}.
+      {%- else %} behind an earlier message{% if first_volume %} in {{ first_volume }}{% endif %}.{% endif %}</strong></p>
+    <p>The same file, byte for byte, was attached to the {% if first.dated %}message of {{ first.date }}{% else %}undated message{% endif %},
+    &ldquo;{{ first.subject }}&rdquo;. Its pages are shown there and are not
+    repeated here. Redactions made on those pages cover this copy.</p>
+  </div>
+{% endblock %}
+{% block details %}
+    <tr><th>Pages</th><td>See {% if bates %}{{ first_range }}{% elif first.dated %}the message of {{ first.date }}{% else %}the undated message &ldquo;{{ first.subject }}&rdquo;{% endif %}{% if first_volume %} in {{ first_volume }}{% endif %}</td></tr>
+{% endblock %}

@@ -1,0 +1,201 @@
+{#-
+  00 START HERE.pdf: what is in the folder, this run's counts, and the Acrobat
+  steps. Context: request_id, prepared, bates (are pages numbered?), counts,
+  volumes, first_volume,
+  wordlist_name, manifest_name, premark_detail_name, natives_dir, keep_natives,
+  convert_attachments, exceptions_listed, order, dedup_messages,
+  dedup_attachments, coverage (None or report.summarize_coverage() dict),
+  appendix_volumes (rows, empty unless --appendix-over), appendix_over,
+  largest (None or survey.start_here_context() dict; attachment names are
+  fine here because START HERE is kept back), search (None or
+  searchreport.context(), for _search.html).
+  Nothing here may name a pre-marked term.
+-#}
+{% extends "_base.html" %}
+{% block page_margin_boxes %}
+    @bottom-left { content: "{{ request_id }} · Start here"; font-family: "DejaVu Sans"; font-size: 8pt; color: #777; }
+{% endblock %}
+{% block style %}
+  body { font-size: 9.5pt; }
+  h1 { font-size: 18pt; margin-bottom: 2px; }
+  .lead { color: #555; margin-bottom: 12px; }
+  h2 { font-size: 11pt; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 14px 0 6px 0; }
+  ul.files { margin: 0 0 6px 0; padding-left: 18px; }
+  ul.files li { margin-bottom: 2px; }
+  p.found { margin: 0 0 5px 0; }
+  ol.steps { margin: 0; padding-left: 20px; }
+  ol.steps li { margin-bottom: 6px; }
+  ol.steps li strong { display: inline; }
+  .note { color: #555; margin-top: 6px; }
+  .keep { border: 1px solid #c9b48a; background: #fbf6ea; border-radius: 4px; padding: 8px 12px; margin: 8px 0 0 0; }
+  .keep p { margin: 0; }
+  table.coverage { width: auto; min-width: 60%; }
+  table.coverage td, table.coverage th { padding: 2px 12px 2px 0; }
+  .largest-section { break-inside: avoid; page-break-inside: avoid; }
+  table.largest { table-layout: fixed; font-size: 8.5pt; }
+  table.largest td, table.largest th { padding: 1px 5px; }
+  table.largest td.filename { overflow-wrap: anywhere; }
+{% endblock %}
+{% block body %}
+  <h1>Start here</h1>
+  <p class="lead">Email review volumes for {{ request_id }}, prepared {{ prepared }}.</p>
+
+  <h2>What is in this folder</h2>
+  <ul class="files">
+    <li><strong>{{ counts.volumes }} volume{{ "" if counts.volumes == 1 else "s" }}</strong>
+      ({% for v in volumes %}{{ v.name }}.pdf{% if not loop.last %}, {% endif %}{% endfor %}).
+      Every message and its attachments, in order, as one PDF per volume. Each message is a bookmark
+      in Acrobat&rsquo;s side panel
+      {%- if bates %}, and every page carries a number in its bottom-right corner, such as
+      {{ counts.example_label }}{% endif %}. {{ first_volume }} opens with an index of every message
+      {%- if exceptions_listed %}, followed by a list of the {{ exceptions_listed }} item{{ "" if exceptions_listed == 1 else "s" }}
+      that could not be shown as pages, with the reason for each{% endif %}.</li>
+    {%- if appendix_volumes %}
+    <li><strong>{{ appendix_volumes | length }} attachment volume{{ "" if appendix_volumes | length == 1 else "s" }}</strong>
+      ({% for v in appendix_volumes %}{{ v.name }}.pdf{% if not loop.last %}, {% endif %}{% endfor %}).
+      {% if appendix_over == 0 %}Every attachment that was converted to pages is here{% else %}Attachments longer than {{ appendix_over | thousands }} page{{ "" if appendix_over == 1 else "s" }} are here{% endif %},
+      so the messages stay together. A one-page note behind the message says where each one is.
+      You can redact the message volumes first and these afterwards.</li>
+    {%- endif %}
+    <li><strong>{{ wordlist_name }}</strong>: the names and email addresses of everyone who sent, received, or was copied
+      on a message, ready to import into Acrobat&rsquo;s redaction search. Keep this file back.</li>
+    {%- if coverage %}
+    <li><strong>{{ premark_detail_name }}</strong>: the names and terms that were marked for redaction in advance,
+      with a count for each. Keep this file back.</li>
+    {%- endif %}
+    <li><strong>{{ manifest_name }}</strong>: a technical record of this run. Keep this file back.</li>
+    {%- if keep_natives %}
+    <li><strong>{{ natives_dir }}</strong>: the attachments as original files. They are not redacted, so do not send them on.</li>
+    {%- endif %}
+  </ul>
+  <div class="keep">
+    <p><strong>What you may release:</strong> only the redacted, sanitized copies of the volumes. Never release
+      the word list, the manifest{% if coverage %}, the file marked DO NOT RELEASE{% endif %}{% if keep_natives %},
+      the folder of original attachments{% endif %}, or an unsanitized volume.</p>
+  </div>
+
+  {%- include "_search.html" %}
+
+  <h2>What this run found</h2>
+  <p class="found">Messages: {{ counts.messages | thousands }} in the volumes
+    {%- if counts.calendar_items %}, of which {{ counts.calendar_items | thousands }} {{ "is a calendar item" if counts.calendar_items == 1 else "are calendar items" }}{% endif %}.
+    {%- if counts.messages_found and counts.messages_found != counts.messages %}
+    The archive held {{ counts.messages_found | thousands }}. {{ counts.duplicates_removed | thousands }}
+    {{ "was an extra copy" if counts.duplicates_removed == 1 else "were extra copies" }} of the same message
+    (exported from more than one mailbox or folder) and {{ "is" if counts.duplicates_removed == 1 else "are" }} shown once.
+    {%- endif %}
+    {%- if counts.skipped_non_mail %} {{ counts.skipped_non_mail | thousands }} item{{ " was" if counts.skipped_non_mail == 1 else "s were" }}
+    not {{ "a message" if counts.skipped_non_mail == 1 else "messages" }} (contacts or similar) and {{ "is" if counts.skipped_non_mail == 1 else "are" }} not included.{% endif %}</p>
+  <p class="found">Attachments: {{ counts.attachments | thousands }}.
+    {%- if not convert_attachments and counts.attachments %} Attachments were not converted to pages for this run. Each is
+    represented by a single page that names the file.
+    {%- elif counts.attachments %} {{ counts.attachments_converted | thousands }} {{ "was" if counts.attachments_converted == 1 else "were" }} converted to pages.
+      {%- if counts.attachments_appendix %} {{ counts.attachments_appendix | thousands }} more {{ "was" if counts.attachments_appendix == 1 else "were" }} converted and
+      {{ "is" if counts.attachments_appendix == 1 else "are" }} in the attachment volumes
+      {%- if counts.appendix_items and counts.appendix_items != counts.attachments_appendix %} as {{ counts.appendix_items | thousands }} item{{ "" if counts.appendix_items == 1 else "s" }}, because identical copies appear there once{% endif %}.{% endif %}
+      {%- if counts.attachments_containers %} {{ counts.attachments_containers | thousands }} {{ "was a zip archive whose files are" if counts.attachments_containers == 1 else "were zip archives whose files are" }}
+      counted here as attachments of their own.{% endif %}
+      {%- if counts.attachments_crossref %} {{ counts.attachments_crossref | thousands }} {{ "was" if counts.attachments_crossref == 1 else "were" }} identical to an earlier
+      one and {{ "is" if counts.attachments_crossref == 1 else "are" }} replaced by a note pointing to it.{% endif %}
+      {%- if counts.attachments_exceptions %} {{ counts.attachments_exceptions | thousands }} could not be converted and {{ "is" if counts.attachments_exceptions == 1 else "are" }}
+      listed behind the index in {{ first_volume }}.{% endif %}
+      {%- if counts.attachments_withheld %} {{ counts.attachments_withheld | thousands }} {{ "was an earlier copy" if counts.attachments_withheld == 1 else "were earlier copies" }}
+      of a recurring report and {{ "was" if counts.attachments_withheld == 1 else "were" }} withheld as you directed: only the latest copy of each is included,
+      and each withheld copy has a one-page note in its place and a line in the list behind the index.{% endif %}
+      {%- if counts.attachments_omitted %} {{ counts.attachments_omitted | thousands }} {{ "was" if counts.attachments_omitted == 1 else "were" }} not included as you directed.
+      Each has a one-page note in its place giving your reason, and a line in the list behind the index.{% endif %}
+    {%- endif %}</p>
+  <p class="found">Pictures: {{ counts.messages_with_images | thousands }} message{{ " contains" if counts.messages_with_images == 1 else "s contain" }} pictures.
+    The index marks them.</p>
+  <p class="found">Pages: {{ counts.pages | thousands }}{% if bates %}, numbered {{ counts.range }}{% endif %}.</p>
+  <p class="found">Order:
+    {%- if order == "thread" %} grouped by conversation, oldest conversation first, replies in date order within each.
+    {%- elif order == "chrono" %} by date, oldest first.
+    {%- else %} by mailbox folder, then by date.{% endif %}</p>
+  <p class="found">Word list: covers the names of everyone who sent, received, or was copied on a message. It cannot
+    know who is named inside a message.</p>
+  {%- if counts.rtf_fallbacks %}
+  <p class="found">{{ counts.rtf_fallbacks | thousands }} message{{ " arrived" if counts.rtf_fallbacks == 1 else "s arrived" }} in a format whose layout could not be kept.
+    {{ "Its" if counts.rtf_fallbacks == 1 else "Their" }} text is shown unformatted.</p>
+  {%- endif %}
+  {%- if counts.render_fallbacks %}
+  <p class="found">{{ counts.render_fallbacks | thousands }} message{{ " could" if counts.render_fallbacks == 1 else "s could" }} not be laid out as sent and
+    {{ "is" if counts.render_fallbacks == 1 else "are" }} shown as plain text{% if counts.render_failures %}, or as a header alone when even that failed{% endif %}.
+    Each carries a notice saying so.</p>
+  {%- endif %}
+  {%- if counts.offpage_fallbacks %}
+  <p class="found">{{ counts.offpage_fallbacks | thousands }} message{{ " is" if counts.offpage_fallbacks == 1 else "s are" }} shown as plain text because
+    {{ "its" if counts.offpage_fallbacks == 1 else "their" }} formatting would have run text past the edge of the page, where it would be hidden
+    from view but could still be searched and copied. Each carries a notice saying so.</p>
+  {%- endif %}
+  {%- if counts.blocked_urls %}
+  <p class="found">Pictures hosted on the web were not fetched and appear blank.</p>
+  {%- endif %}
+  {%- if counts.calendar_items %}
+  <p class="found">Calendar items show no organizer or attendees when the export did not include them.</p>
+  {%- endif %}
+
+  <h2>How to redact a volume in Acrobat</h2>
+  <ol class="steps">
+    <li><strong>Open a volume.</strong> Start with {{ first_volume }}. The index on its first pages lists every
+      message{% if bates %}, its page numbers,{% endif %} and whether it contains pictures.
+      {%- if appendix_volumes %} The attachment volumes can wait until the message volumes are done.{% endif %}</li>
+    <li><strong>Mark the names.</strong> In All tools choose Redact, then Redact text &amp; images, then Find text.
+      Pick Multiple words or phrases, click Select words, then Import, and choose {{ wordlist_name }} from this
+      folder. Remove the people this request is about and any department or shared-mailbox names, then Search,
+      Check all, and Mark checked results for redaction. Choose &ldquo;All PDF documents in&rdquo; this folder to
+      cover every volume in one pass.</li>
+    <li><strong>Page through.</strong> Read every page and mark what the word list cannot find: names inside the
+      text of a message, in a picture, or in an attachment. The index&rsquo;s Pict. column shows which messages
+      contain pictures. Drag a rectangle over words inside a picture with Redact text &amp; images.</li>
+    <li><strong>Apply and save.</strong> Click Apply, leave &ldquo;Sanitize and remove hidden information&rdquo; ticked,
+      and save the copy Acrobat proposes. Do this for each volume. If you want one file per message, split at
+      bookmarks before applying, because sanitizing removes bookmarks. Send only the sanitized copies.</li>
+  </ol>
+
+  {%- if coverage %}
+  <h2>Redactions marked in advance</h2>
+  <p>The volumes already contain {{ coverage.total | thousands }} redaction mark{{ "" if coverage.total == 1 else "s" }}
+    from the term list supplied with this request. They are proposals only: review them, add or remove marks,
+    and nothing is removed until you click Apply.</p>
+  <table class="grid coverage">
+    <thead><tr><th>Category</th><th class="num">Terms</th><th class="num">Marks</th></tr></thead>
+    <tbody>
+    {%- for c in coverage.categories %}
+      <tr><td>{{ c.category }}</td><td class="num">{{ c.terms | thousands }}</td><td class="num">{{ c.marks | thousands }}</td></tr>
+    {%- endfor %}
+    {%- for p in coverage.patterns %}
+      <tr><td>Pattern: {{ p.pattern }}</td><td class="num"></td><td class="num">{{ p.marks | thousands }}</td></tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  {%- if coverage.terms_without_hits %}
+  <p class="note">{{ coverage.terms_without_hits | thousands }} of the {{ coverage.terms | thousands }} terms
+    {{ "was" if coverage.terms_without_hits == 1 else "were" }} not found anywhere. {{ premark_detail_name }} says which.
+    Those terms may be spelled differently in the messages, or may not appear at all.</p>
+  {%- endif %}
+  {%- endif %}
+  {%- block largest_attachments %}
+  {%- if largest %}
+  <div class="largest-section">
+  <h2>Largest attachments</h2>
+  <p class="found">{% if largest.count == 1 %}The largest attachment fills{% elif largest.count < largest.with_pages %}The {{ largest.count }} largest attachments fill{% else %}The {{ largest.count }} attachments with pages fill{% endif %}
+    {{ largest.top_pages | thousands }} of the {{ largest.total_pages | thousands }} pages ({{ largest.top_share }})
+    {%- if largest.count < largest.with_pages %}; all {{ largest.with_pages | thousands }} attachments with pages fill {{ largest.attachment_pages | thousands }} ({{ largest.attachment_share }}){% endif %}.</p>
+  <table class="grid largest">
+    <colgroup><col style="width: 51%"><col style="width: 12%"><col style="width: 8%"><col style="width: 10%"><col style="width: 11%"><col style="width: 8%"></colgroup>
+    <thead><tr><th>Attachment</th><th>Type</th><th class="num">Pages</th><th class="num">Attached</th><th class="num">In volumes</th><th class="num">Share</th></tr></thead>
+    <tbody>
+    {%- for r in largest.rows %}
+      <tr><td class="filename">{{ r.filename }}</td><td>{{ r.type }}</td><td class="num">{{ r.pages | thousands }}</td>
+        <td class="num">{{ r.copies | thousands }}</td><td class="num">{{ r.pages_in_volumes | thousands }}</td><td class="num">{{ r.share }}</td></tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  <p class="note">Attached counts the messages that carried the file.
+    {%- if dedup_attachments %} In volumes counts its pages once: each later copy is a one-page note pointing back to it.
+    {%- else %} In volumes counts its pages every time it was attached.{% endif %}</p>
+  </div>
+  {%- endif %}
+  {%- endblock %}
+{% endblock %}

@@ -1,0 +1,156 @@
+{#-
+  Index pages at the front of Volume 01. Context: request_id, prepared,
+  message_count, volume_count, page_count, bates (are pages numbered?),
+  overall_range, volumes (rows), rows (per-message rows from
+  report._index_rows), common_folder (the one folder every message came from,
+  else None), col_widths, images_flagged, and with --appendix-over
+  appendix_volumes, appendix_rows, appendix_widths (all empty otherwise).
+
+  With bates off the volumes carry no printed page numbers, so there is
+  nothing for the Pages columns to quote and they are left out entirely.
+-#}
+{% extends "_base.html" %}
+{% block page_size %}Letter landscape{% endblock %}
+{% block page_margin_boxes %}
+    @bottom-center { content: "Index, page " counter(page) " of " counter(pages); font-family: "DejaVu Sans"; font-size: 8pt; color: #777; }
+{% endblock %}
+{% block style %}
+  body { font-size: 7pt; line-height: 1.15; }
+  h1 { font-size: 16pt; margin-bottom: 2px; }
+  .lead { color: #555; margin-bottom: 8px; }
+  table.vols { width: auto; margin-bottom: 10px; }
+  table.vols td, table.vols th { padding: 1px 14px 1px 0; }
+  table.grid th, table.grid td { padding: 0.5px 3px; }
+  table.msgs { table-layout: fixed; }
+  td.seq, td.bates, td.date { white-space: nowrap; }
+  td.subject { overflow-wrap: anywhere; }
+  td.people { overflow-wrap: anywhere; }
+  td.people .addr { white-space: nowrap; }
+  td.flag { text-align: center; }
+  .legend { margin-top: 6px; color: #555; }
+{% endblock %}
+{% block body %}
+  <h1>Index</h1>
+  <p class="lead">
+    {{ request_id }} &middot; {{ message_count | thousands }} message{{ "" if message_count == 1 else "s" }}
+    in {{ volume_count }} volume{{ "" if volume_count == 1 else "s" }}
+    {%- if appendix_volumes %} and {{ appendix_volumes | length }} attachment volume{{ "" if appendix_volumes | length == 1 else "s" }}{% endif %},
+    {% if bates %}pages {{ overall_range }}{% else %}{{ page_count | thousands }} page{{ "" if page_count == 1 else "s" }}{% endif %}
+    &middot; prepared {{ prepared }}
+    {%- if common_folder %} &middot; All messages come from the folder {{ common_folder }}{% endif %}
+  </p>
+
+  <table class="grid vols">
+    <thead>
+      <tr><th>Volume</th><th>Pages</th><th>Messages</th></tr>
+    </thead>
+    <tbody>
+    {%- for v in volumes %}
+      <tr>
+        <td>{{ v.name }}</td>
+        <td>{% if bates %}{{ v.range }}{% else %}{{ v.pages | thousands }}{% endif %}</td>
+        <td>{% if v.first_seq == v.last_seq %}{{ v.first_seq }}{% else %}{{ v.first_seq }} to {{ v.last_seq }}{% endif %}</td>
+      </tr>
+    {%- endfor %}
+    {%- for v in appendix_volumes %}
+      <tr>
+        <td>{{ v.name }}</td>
+        <td>{% if bates %}{{ v.range }}{% else %}{{ v.pages | thousands }}{% endif %}</td>
+        <td>{% if v.first_item == v.last_item %}Item {{ v.first_item }}{% else %}Items {{ v.first_item }} to {{ v.last_item }}{% endif %}</td>
+      </tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+
+  <table class="grid msgs">
+    <colgroup>
+      {%- for width in col_widths %}
+      <col style="width: {{ width }}%">
+      {%- endfor %}
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        {%- if bates %}
+        <th>Pages</th>
+        {%- endif %}
+        <th>Date</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Subject</th>
+        {%- if not common_folder %}
+        <th>Folder</th>
+        {%- endif %}
+        <th class="num">Att.</th>
+        <th>Pict.</th>
+      </tr>
+    </thead>
+    <tbody>
+    {%- for r in rows %}
+      <tr>
+        <td class="seq num">{{ r.seq }}</td>
+        {%- if bates %}
+        <td class="bates">{{ r.range }}</td>
+        {%- endif %}
+        <td class="date">{{ r.date }}</td>
+        <td class="people">{{ r.from }}</td>
+        <td class="people">{{ r.to }}</td>
+        <td class="subject">{% if r.kind == "calendar" %}<span class="muted">Calendar:</span> {% endif %}{{ r.subject }}</td>
+        {%- if not common_folder %}
+        <td>{{ r.folders }}</td>
+        {%- endif %}
+        <td class="num">{{ r.attachments if r.attachments else "" }}</td>
+        <td class="flag">{% if r.images %}Yes{% endif %}</td>
+      </tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+
+  <p class="legend">
+    {% if bates %}<strong>Pages</strong> are the numbers printed at the bottom right of each page, covering the message and its attachments.
+    {% else %}<strong>#</strong> is the message number, shown in Acrobat&rsquo;s bookmarks.
+    {% endif %}<strong>Att.</strong> is how many attachments follow the message{% if appendix_rows %}, counting those in the attachment volumes, which are listed below{% endif %}.
+    <strong>Pict.</strong> marks the {{ images_flagged | thousands }} message{{ " that contains" if images_flagged == 1 else "s that contain" }} pictures:
+    words inside a picture are not found by search and must be marked by hand.
+  </p>
+  {%- if appendix_rows %}
+
+  <h2>Attachments in the attachment volumes</h2>
+  <p class="lead">These long attachments were moved out of the message volumes so the messages stay together.
+    Each is shown once, behind a sheet naming it, and a one-page note stands in its place behind every message listed.
+    <strong>Length</strong> is the number of pages in the attachment itself.{% if bates %} <strong>Pages</strong> also covers the sheet in front of it.{% endif %}</p>
+  <table class="grid msgs">
+    <colgroup>
+      {%- for width in appendix_widths %}
+      <col style="width: {{ width }}%">
+      {%- endfor %}
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="num">Item</th>
+        {%- if bates %}
+        <th>Pages</th>
+        {%- endif %}
+        <th>Volume</th>
+        <th>Attachment</th>
+        <th class="num">Length</th>
+        <th>Messages</th>
+      </tr>
+    </thead>
+    <tbody>
+    {%- for r in appendix_rows %}
+      <tr>
+        <td class="seq num">{{ r.item }}</td>
+        {%- if bates %}
+        <td class="bates">{{ r.range }}</td>
+        {%- endif %}
+        <td class="date">{{ r.volume }}</td>
+        <td class="subject">{{ r.filename }}</td>
+        <td class="num">{{ r.pages | thousands }}</td>
+        <td class="subject">{{ r.messages }}</td>
+      </tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  {%- endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{#-
+  Stands in for an attachment withheld by a decision (--decisions).
+  Context adds: reason, omit (an omit decision: reason is the reviewers' note, shown
+  as written, with no wording of the tool's own around it).
+-#}
+{% extends "_attachment_page.html" %}
+{% block eyebrow %}{% if omit %}This attachment is not included{% else %}This attachment was withheld{% endif %}{% endblock %}
+{% block notice %}
+  <div class="notice">
+    {%- if omit %}
+    <p style="white-space: pre-line"><strong>Not included.</strong> {{ reason }}</p>
+    {%- else %}
+    <p style="white-space: pre-line"><strong>Not included.</strong> This file is not reproduced here because {{ reason }}{% if reason[-1:] not in ".!?" %}.{% endif %}</p>
+    {%- endif %}
+    <p>It is listed in the exceptions table behind the index at the front of Volume 01.</p>
+  </div>
+{% endblock %}
+{#- No Pages row: a withheld copy is never converted, so it has no count to give. -#}
+{% block details %}{% endblock %}

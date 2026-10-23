@@ -1,0 +1,24 @@
+{#-
+  Stands in for an attachment whose pages were moved to the appendix volumes
+  (--appendix-over). Context adds: item (number, not printed: the item and
+  its header sheet are found by this file's name, or by its pages when they
+  are numbered), pages (phrase, "" when unknown), messages (how many messages
+  carried the same file; chooses the wording, never printed), bates (are
+  pages numbered?), item_range (text, "" when pages are unnumbered), volume
+  (file name or ""), over (the --appendix-over threshold, 0 = everything moved).
+-#}
+{% extends "_attachment_page.html" %}
+{% block eyebrow %}This attachment is in a separate volume{% endblock %}
+{% block notice %}
+  <div class="notice">
+    <p><strong>Its pages are in {% if volume %}{{ volume }}{% else %}the attachment volumes{% endif %}
+      {%- if bates and item_range %}, at {{ item_range }}{% else %}, behind a sheet naming this file{% endif %}.</strong></p>
+    <p>{% if not over %}Attachments{% else %}Attachments longer than {{ over | thousands }} page{{ "" if over == 1 else "s" }}{% endif %} were moved out of the message volumes so the messages stay together.
+    {%- if messages > 1 %} The same file was also attached to other messages. It appears in the attachment
+    volume once, and redactions made there cover every copy.{% endif %}</p>
+  </div>
+{% endblock %}
+{% block details %}
+    <tr><th>Conversion</th><td>{{ att.method }}</td></tr>
+    <tr><th>Pages</th><td>{% if pages %}{{ pages }}, in{% else %}In{% endif %} {% if volume %}{{ volume }}{% else %}the attachment volumes{% endif %}{% if bates and item_range %}, at {{ item_range }}{% endif %}</td></tr>
+{% endblock %}

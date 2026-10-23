@@ -1,0 +1,85 @@
+{#-
+  One mail message or calendar item. Context: msg (MessageModel), seq (int | None),
+  folders (list[str]), copies (int), the last three passed only for a triage copy, notice (str | None, shown above the body when
+  the message is a render fallback), body_html (str | None, replaces msg.body_html).
+-#}
+{% extends "_base.html" %}
+{% block style %}
+  .header {
+    border: 1px solid #ccc; background: #f6f6f6; border-radius: 4px;
+    padding: 8px 12px; margin-bottom: 14px;
+  }
+  .meta { font-size: 8.5pt; color: #555; margin: 0 0 4px 0; }
+  .meta .msgno { font-weight: 600; color: #333; }
+  .meta .kind { font-weight: 600; }
+  .subject { font-size: 12pt; font-weight: bold; margin: 0 0 6px 0; }
+  .header table.kv td { white-space: normal; overflow-wrap: normal; }
+  .header table.kv td.single { white-space: nowrap; }
+  .attachments { margin: 6px 0 0 0; color: #555; }
+  .attachments ul { margin: 2px 0 0 0; padding-left: 18px; }
+  .attachments li { overflow-wrap: anywhere; }
+  .notice {
+    border: 1px solid #c9b48a; background: #fbf6ea; border-radius: 4px;
+    padding: 8px 12px; margin: 0 0 14px 0;
+  }
+  /* Body content must wrap to the page: anything past the right margin is
+     clipped from view but stays in the text layer. parse.clean_html wraps
+     long unbroken runs (link targets) in spans that may break anywhere. */
+  .body { overflow-wrap: break-word; }
+  /* An image past the page edge is cut off from view but keeps every pixel
+     in the PDF. !important beats the sender's inline max-width; 9in is less
+     than the page's content height, so no image is taller than a page. */
+  .body img { max-width: 100% !important; max-height: 9in !important; }
+  .body pre { white-space: pre-wrap; margin: 0; }
+  .body table { max-width: 100%; }
+{% endblock %}
+{% block body %}
+{%- set is_cal = msg.kind == "calendar" %}
+  <div class="header">
+    {%- if seq or folders or is_cal %}
+    <p class="meta">
+      {%- if seq %}<span class="msgno">Message {{ seq }}</span>{% endif %}
+      {%- if is_cal %}{% if seq %} &middot; {% endif %}<span class="kind">Calendar item</span>{% endif %}
+      {%- if folders %}{% if seq or is_cal %} &middot; {% endif %}<span class="folders">{{ "Folders" if folders|length > 1 else "Folder" }}: {{ folders | join(", ") }}</span>{% endif %}
+      {%- if copies and copies > 1 %} &middot; <span class="copies">{{ copies }} copies in the archive, shown once</span>{% endif %}
+    </p>
+    {%- endif %}
+    <p class="subject">{{ msg.subject or "(no subject)" }}</p>
+    <table class="kv">
+      {%- if msg.from_addr or not is_cal %}
+      <tr><th>{{ "Organizer" if is_cal else "From" }}</th><td>
+        {%- for a in msg.from_addr | addresses %}<span class="addr">{{ a }}</span>{% if not loop.last %}, {% endif %}{% endfor -%}
+      </td></tr>
+      {%- endif %}
+      {%- if msg.to_addrs or not is_cal %}
+      <tr><th>{{ "Attendees" if is_cal else "To" }}</th><td>
+        {%- for a in msg.to_addrs | addresses %}<span class="addr">{{ a }}</span>{% if not loop.last %}, {% endif %}{% endfor -%}
+      </td></tr>
+      {%- endif %}
+      {%- if msg.cc_addrs %}
+      <tr><th>Cc</th><td>
+        {%- for a in msg.cc_addrs | addresses %}<span class="addr">{{ a }}</span>{% if not loop.last %}, {% endif %}{% endfor -%}
+      </td></tr>
+      {%- endif %}
+      {%- if msg.bcc_addrs %}
+      <tr><th>Bcc</th><td>{% for a in msg.bcc_addrs | addresses %}<span class="addr">{{ a }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>
+      {%- endif %}
+      <tr><th>{{ "When" if is_cal else "Date" }}</th><td class="single">{% if msg.date %}{{ msg.date.strftime("%a, %d %b %Y %H:%M %Z").strip() }}{% else %}(unknown){% endif %}</td></tr>
+    </table>
+    {%- if msg.attachments %}
+    <div class="attachments">
+      Attachments:
+      <ul>
+        {%- for a in msg.attachments %}
+        <li>{{ a.filename }} ({{ a.size | human_size }})</li>
+        {%- endfor %}
+      </ul>
+    </div>
+    {%- endif %}
+  </div>
+  {%- if msg.intake_issues %}<div class="notice">Intake exceptions: {{ msg.intake_issues | join("; ") }}. See the internal intake report.</div>{% endif %}
+  {%- if notice %}
+  <div class="notice">{{ notice }}</div>
+  {%- endif %}
+  <div class="body">{{ (body_html if body_html is not none else msg.body_html) | safe }}</div>
+{% endblock %}

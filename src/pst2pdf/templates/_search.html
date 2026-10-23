@@ -1,0 +1,54 @@
+{% if options is defined and options.input_format == "mbox" %}
+<h2>MBOX source</h2>
+<p>These volumes were prepared from MBOX files. Reading the files does not establish that the export is complete.
+Inspect Intake report - DO NOT RELEASE.json and any INCOMPLETE notice before review.</p>
+{% if options.export_source != "unknown" %}<p>Export origin (user-supplied): {{ options.export_source }}.</p>{% endif %}
+{% if options.search_query %}<p>User-supplied search query: {{ options.search_query }}</p>{% endif %}
+{% if options.export_description %}<p>User-supplied export description: {{ options.export_description }}</p>{% endif %}
+<p>Display timezone: {{ options.display_timezone or "system local" }}. Original timestamps and intake exceptions are retained in the internal intake report.</p>
+{% endif %}
+{#-
+  "The search" section of START HERE (both kinds) and the attachment survey,
+  included where a page wants it. Context: search (None, or
+  searchreport.context()). The query is printed exactly as given: the box
+  keeps its spaces and line breaks and wraps anywhere, and autoescaping
+  keeps its quotes and angle brackets as written. The query may name
+  people, which is fine only because none of these pages is released.
+-#}
+{%- if search %}
+  <h2>The search</h2>
+  {%- if search.from_report %}
+  <p class="search-lead">These messages were collected by a Microsoft Purview search. From the export&rsquo;s Purview report:</p>
+  {%- else %}
+  <p class="search-lead">These messages were collected by the search below, supplied as text with this run
+    rather than read from the export&rsquo;s Purview report.</p>
+  {%- endif %}
+  <table class="kv search">
+    {%- for label, value in search.rows %}
+    <tr><th>{{ label }}</th><td>{{ value }}</td></tr>
+    {%- endfor %}
+    <tr><th>Query</th><td><div class="query">{{ search.query }}</div></td></tr>
+    {%- if search.filtered %}
+    <tr><th>Permissions filter</th><td>Applied{% if search.location_restriction %}. Locations: <span class="query-inline">{{ search.location_restriction }}</span>{% endif %}
+      {%- if search.content_restriction %}. Content: <span class="query-inline">{{ search.content_restriction }}</span>{% endif %}</td></tr>
+    {%- endif %}
+  </table>
+  {%- if search.segments or search.conditions %}
+  <p class="search-note">In Purview&rsquo;s notation,
+    {%- if search.segments %} (c:s) separates keywords entered on separate lines{% endif %}
+    {%- if search.segments and search.conditions %}, and{% endif %}
+    {%- if search.conditions %} everything after (c:c) is a condition every item also had to meet{% endif %}.</p>
+  {%- endif %}
+  {%- if search.run_time %}
+  <p class="search-note">Run time is how long Purview&rsquo;s export process took, from the start to the finish
+    it recorded. It does not include any earlier statistics or sample runs of the search, or anyone&rsquo;s time
+    building it.</p>
+  {%- endif %}
+  {%- if search.filtered %}
+  <p class="search-note">A permissions filter set by a Purview administrator limited what this search could reach.</p>
+  {%- endif %}
+  {%- if search.truncated %}
+  <p class="search-note">The query is exactly 255 characters long, the length at which some Purview reports cut text off.
+    Check it against the search in Purview.</p>
+  {%- endif %}
+{%- endif %}
