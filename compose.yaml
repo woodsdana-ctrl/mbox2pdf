@@ -1,0 +1,43 @@
+# Start: docker compose up --build
+# Open http://127.0.0.1:8765 (local computer only).
+services:
+  review:
+    user: "${REVIEW_UID:-1000}:${REVIEW_GID:-1000}"
+    image: mbox2pdf-review
+    build: .
+    entrypoint:
+      [
+        "/usr/bin/tini",
+        "--",
+        "python",
+        "-m",
+        "pst2pdf.review",
+        "serve",
+        "--host",
+        "0.0.0.0",
+      ]
+    ports: ["127.0.0.1:8765:8765"]
+    volumes: ["./review-data:/data"]
+    networks: [local-review]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    read_only: true
+    tmpfs: [/tmp]
+  worker:
+    user: "${REVIEW_UID:-1000}:${REVIEW_GID:-1000}"
+    image: mbox2pdf-review
+    build: .
+    entrypoint:
+      ["/usr/bin/tini", "--", "python", "-m", "pst2pdf.review", "worker"]
+    network_mode: none
+    volumes: ["./review-data:/data"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 512
+    read_only: true
+    tmpfs: [/tmp]
+    environment: { HOME: /tmp }
+networks:
+  local-review:
+    driver: bridge

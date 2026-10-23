@@ -661,3 +661,52 @@ placeholder, exception and nonzero status. No export is asserted complete.
 All old conversion, rendering, attachment decisions, dedup cross-references,
 appendix, Bates and proposed-redaction paths are reused. Production ZIPs exclude
 internal reports as well as original attachments. No output is release-approved.
+
+## Local browser review and selected-message production
+
+`review.py` implements a local SQLite store plus an offline polling worker.
+`review_server.py` provides a loopback HTTP interface with bundled `web/` assets.
+`compose.yaml` exposes only the UI port on 127.0.0.1:8765, uses a bridge network
+for that service (Docker internal networks do not reliably publish the UI port) and `network_mode: none` for the conversion worker. The Docker
+socket is never mounted. `mbox2pdf-review.sh` creates local storage, builds with
+optional CA trust, selects the host UID/GID and starts Compose.
+
+Uploads are streamed to UUID-named source copies beneath `internal - DO NOT
+RELEASE`. Projects bind sorted original filenames and SHA-256 hashes (including
+multiplicity). Source copies are rehashed on open, mutation, queueing and before/
+after parsing and production. An invalid/incomplete import is rejected. Project
+IDs are source-manifest hashes. Item IDs are domain-separated SHA-256 hashes of
+`organize.dedup_key` for MBOX; same-ID conflicts and differing attachments remain
+separate. Deduplicated item source associations include names, archive hashes,
+copy IDs, positions and labels. Defaults are Include for every item. The review
+JSON in SQLite contains display text, decisions, revision, batches and an event
+log. BEGIN IMMEDIATE transactions and checked revisions prevent stale decision
+writes; undo restores each batch's prior inclusion and reason. Reads/filters do
+not modify decisions. Filtering operates on saved review display text and dates;
+unknown dates fail bounded date filters. UI all-filtered selection uses the
+applied filter snapshot, never unsent form edits.
+
+A generation job stores an immutable project/decision/settings snapshot in SQLite
+and writes it as a per-run internal audit. The single worker claims queued jobs
+transactionally; on restart interrupted runs are failed rather than assumed
+complete. It reparses/validates original sources, compares the complete stable-ID
+set, then removes excluded source copies. `cli.build_volumes` accepts optional
+keyword-only `prepared_models` (and intake_stats) to skip parsing while retaining
+all existing planning/rendering/conversion steps. No excluded model or decision
+reason enters that pipeline. Deduplication, threads, conversion, attachment
+cross-references, front matter, Bates and volumes are rebuilt from the included
+models. The browser adds no redaction controls or processing step; existing CLI
+attachment decisions and redaction features remain unchanged. Survey/triage modes
+share the selection boundary.
+After successful production, a package allowlists only volume/appendix filenames
+from the manifest and verifies their hashes. Raw output folders and audit records
+are never packaged; failed/triage/survey jobs offer no volume download.
+
+Previews are plain text derived with `render.html_to_text`, not sanitized HTML
+inserted into the browser. Email strings use DOM textContent; no inline images,
+remote resources, script, links or attachments execute. Local HTTP requires exact
+localhost Host, matching Origin when supplied and a per-process random token for
+mutations; CSP denies external resources, frames, fonts and inline code. No
+external service client or analytics is introduced. This is a single-computer
+loopback tool, not an authenticated multiuser service. See docs/REVIEW.md for
+storage/retention, operational limitations and browser integration tests.

@@ -32,3 +32,6 @@ CLAUDE.local.md
 *.mbox
 *.eml
 *.zip
+
+# Local browser review data (mail, decisions and audit records)
+review-data/

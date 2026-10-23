@@ -1,3 +1,14 @@
+# Browser review additions
+
+Read docs/REVIEW.md for the staff workflow and docs/DESIGN.md for the selection
+boundary. review.py owns SQLite decisions and the offline worker; review_server.py
+and web/ own inert-text previews and local HTTP. Keep generation in a separate
+network_mode:none container. Do not render email HTML in the UI or mount the
+Docker socket. Filter only through prepared_models before all PDF stages; never
+put excluded content, reasons or source metadata into volume ZIPs. Review IDs are
+strict content hashes bound to source archive manifests, not rows or Message-ID.
+Run tests/test_review.py and the optional real Chromium test_review_browser.py.
+
 # MBOX adaptation
 
 This checkout reuses upstream pst2pdf; read the Gmail quick start in README.md

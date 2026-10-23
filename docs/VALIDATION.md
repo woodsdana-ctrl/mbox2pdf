@@ -71,3 +71,30 @@ review ZIPs are included in the source tree.
 - MBOXO escaping is supported. MBOXRD extra quoting is retained. Improperly
   unescaped body lines beginning `From ` are inherently ambiguous under MBOX;
   use correctly exported archives. No Vault companion metadata parser exists.
+
+## Local browser message selection (2026-10-23)
+
+The browser adds inclusion/exclusion decisions before the existing PDF pipeline.
+It adds no redaction controls and leaves the existing attachment-decision and
+redaction implementations unchanged.
+
+- Supported Docker integration suite: **588 passed, 3 skipped**. The skips were
+  the optional browser dependency and two host ZIP-wrapper checks.
+- Host wrapper and documentation checks: **40 passed**, including those ZIP
+  checks. Focused selection, browser and documentation checks: **25 passed**.
+- Chromium against the actual Compose services: **1 passed**. Synthetic multiple
+  archives exercised page versus all-filtered bulk exclusion, undo, persistence,
+  immutable generation decisions, included-only PDFs and package download.
+- Restarting the containers retained decisions and completed runs, with source
+  hashes verified. Docker inspection confirmed the conversion worker uses
+  `network_mode: none`, read-only root filesystems and a localhost-only published
+  browser port. Browser requests remained local; previews use inert text.
+- Existing redaction regression tests passed. Tests reject newly supplied
+  redaction settings in the selection API. No source mail or generated review
+  packages are committed.
+
+Windows launch instructions are documented but were not exercised. The browser
+preview displays message text and attachment names; it does not open attachments.
+Local review state and audit records contain sensitive source information and
+must remain internal. Included replies can still quote excluded messages, and
+PDFs still require human review and the existing redaction process as needed.

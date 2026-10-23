@@ -56,7 +56,8 @@ released, you are welcome to be credited in its notes.
 
 ## How attachments are handled
 
-* The container runs with no network, no Linux capabilities, no privilege
+* The CLI conversion container and browser conversion worker run with no
+  network, no Linux capabilities, no privilege
   escalation, a process limit and your own user account. The archive and any
   terms, decisions or search report file are mounted read-only (from a
   report folder, only its Summary CSV).
@@ -84,3 +85,24 @@ entirely internal. Review volumes still contain unredacted visible content until
 a human applies and verifies redactions. Temporary spools are removed normally;
 --work-dir retains them and needs protected storage. Remote resources are blocked,
 including tracking pixels and linked Drive files. No Google credentials are used.
+
+## Browser review interface
+
+The optional local HTTP interface is documented in [docs/REVIEW.md](docs/REVIEW.md).
+It exposes only localhost port 8765 through Docker, with a Docker bridge
+network for the UI and a separate worker using network_mode: none. Neither container has a
+Docker socket mount. Existing CLI conversions remain network-isolated. This adds
+local HTTP code, not external API/AI/analytics calls. All browser assets are local.
+Email previews are inert text via textContent, with no attachment opening or image
+loading; Host/Origin checks, mutation tokens, no-store responses and restrictive
+CSP block cross-site requests and resource loads. PDF rendering keeps its existing
+non-data URL restrictions. Source archives are copied, not modified, and hashes
+bind review decisions to exact sources. Internal state includes exclusion reasons,
+message text and addresses, source metadata and immutable generation audit records
+under review-data/internal - DO NOT RELEASE/. Do not release this folder or raw
+run output. Only allowlisted generated volume PDFs enter browser download ZIPs.
+Excluded data is filtered before PDF production, but included replies may still
+quote excluded material; selection never rewrites quoted text. All PDFs still
+require human review and redaction. Loopback access is not multiuser authentication;
+protect the local machine, disk and backups. No application encryption or automatic
+retention/deletion is provided. Keep the port bound to 127.0.0.1.

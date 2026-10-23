@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MBOX review</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>MBOX review</h1>
+      <p>Review locally. Choose what belongs in your PDF volumes.</p>
+    </header>
+    <main>
+      <section class="card">
+        <h2>1. Open your email export</h2>
+        <p>
+          Original files stay unchanged. Review decisions are saved
+          automatically on this computer.
+        </p>
+        <form id="import-form">
+          <label
+            >MBOX files
+            <input
+              id="archives"
+              type="file"
+              accept=".mbox"
+              multiple
+              required /></label
+          ><label
+            >Display timezone
+            <input id="import-zone" value="America/Chicago" required /></label
+          ><button id="import-button">Import MBOX files</button>
+        </form>
+        <label
+          >Resume a saved review
+          <select id="projects">
+            <option value="">Choose a review…</option>
+          </select></label
+        ><button id="open-project" type="button">Open saved review</button>
+      </section>
+      <p id="notice" role="status" aria-live="polite">
+        Choose one or more MBOX files to begin.
+      </p>
+      <div id="review" hidden>
+        <section class="card">
+          <h2>2. Review messages</h2>
+          <p id="totals" class="totals"></p>
+          <p>
+            One decision covers a deduplicated message and
+            <strong>all its source copies</strong>. Source files and positions
+            appear in the reading pane.
+          </p>
+          <form id="filters">
+            <div class="filter-grid">
+              <label>From date <input name="start" type="date" /></label
+              ><label>Through date <input name="end" type="date" /></label>
+              <label
+                >Sender contains <input name="sender" type="search" /></label
+              ><label
+                >Recipient contains <input name="recipient" type="search"
+              /></label>
+              <label
+                >Subject contains <input name="subject" type="search" /></label
+              ><label
+                >Subject or body contains <input name="text" type="search"
+              /></label>
+              <label
+                >Gmail label contains
+                <input name="label" type="search" /></label
+              ><label
+                >Review status
+                <select name="status">
+                  <option value="all">All messages</option>
+                  <option value="include">Include</option>
+                  <option value="exclude">Exclude</option>
+                </select></label
+              >
+            </div>
+            <button>Apply filters</button
+            ><button id="clear-filters" type="button" class="secondary">
+              Clear filters
+            </button>
+          </form>
+          <p>
+            Filters only change what you see. They never change Include/Exclude
+            decisions. Unknown dates are omitted when a date filter is set.
+          </p>
+          <div class="toolbar">
+            <button id="select-page" class="secondary">Select this page</button
+            ><button id="select-filtered" class="secondary">
+              Select all filtered results</button
+            ><button id="clear-selection" class="secondary">
+              Clear selection</button
+            ><span id="selection" role="status">No messages selected</span>
+          </div>
+          <div class="toolbar">
+            <label
+              >Optional exclusion reason
+              <input id="reason" maxlength="2000" /></label
+            ><button id="exclude" class="danger">Exclude selected</button
+            ><button id="include">Restore selected to Include</button
+            ><button id="undo" class="secondary">
+              Undo last decision change
+            </button>
+          </div>
+          <div class="review-grid">
+            <div class="list">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Select</th>
+                    <th>Date</th>
+                    <th>Sender / Recipients</th>
+                    <th>Subject</th>
+                    <th>Attachments</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="messages"></tbody>
+              </table>
+              <div class="toolbar">
+                <button id="previous" class="secondary">Previous page</button
+                ><span id="page-info"></span
+                ><button id="next" class="secondary">Next page</button>
+              </div>
+            </div>
+            <article id="reading" aria-label="Message reading pane">
+              <h3>Select a subject to read a message</h3>
+              <p>
+                Previews show the full available message text without executing
+                HTML, loading images, or opening attachments.
+              </p>
+            </article>
+          </div>
+        </section>
+        <section class="card">
+          <h2>3. Generate PDFs</h2>
+          <p>
+            Excluded messages may still be quoted in included replies. Quoted
+            text is not removed or rewritten. After generation, continue your
+            existing review and redaction workflow.
+          </p>
+          <form id="generate-form">
+            <div class="filter-grid">
+              <label
+                >Request name
+                <input
+                  name="request_id"
+                  value="Request"
+                  maxlength="200"
+                  required
+              /></label>
+              <label
+                >Display timezone
+                <input name="timezone" value="America/Chicago" required
+              /></label>
+              <label
+                >Output
+                <select name="mode">
+                  <option value="review">PDF review volumes</option>
+                  <option value="survey">Attachment survey only</option>
+                  <option value="triage">Internal attachment triage</option>
+                </select></label
+              >
+              <label
+                >Message order
+                <select name="order">
+                  <option value="thread">Conversation</option>
+                  <option value="chrono">Chronological</option>
+                </select></label
+              >
+              <label
+                >Bates prefix
+                <input name="prefix" value="DOC-" maxlength="40" /></label
+              ><label
+                >First Bates number
+                <input
+                  name="start"
+                  type="number"
+                  min="0"
+                  max="1000000000"
+                  value="1"
+                  required
+              /></label>
+              <label
+                >Pages per volume
+                <input
+                  name="volume_pages"
+                  type="number"
+                  min="1"
+                  max="100000"
+                  value="1000"
+                  required
+              /></label>
+              <label
+                >Move attachments over this many pages to appendix (optional)
+                <input name="appendix_over" type="number" min="0" max="100000"
+              /></label>
+              <label
+                >Attachment handling
+                <select name="convert_attachments">
+                  <option value="true">Convert attachments</option>
+                  <option value="false">Placeholder pages only</option>
+                </select></label
+              >
+              <label
+                >Identical attachments
+                <select name="dedup_attachments">
+                  <option value="true">Cross-reference duplicates</option>
+                  <option value="false">Repeat each copy</option>
+                </select></label
+              >
+            </div>
+            <button>Review generation totals</button>
+          </form>
+          <dialog id="confirm-generation">
+            <h2>Confirm PDF generation</h2>
+            <p id="generation-summary"></p>
+            <p id="generation-options"></p>
+            <p>
+              Only included messages and their attachments will be processed.
+              This takes a saved snapshot of your current decisions. Later
+              changes apply to the next run.
+            </p>
+            <p>
+              Included replies can quote excluded messages. Review and apply any
+              necessary redactions before release.
+            </p>
+            <button id="generate">Generate PDFs</button
+            ><button id="cancel-generation" class="secondary">
+              Back to review
+            </button>
+          </dialog>
+          <div id="jobs" aria-live="polite"></div>
+        </section>
+      </div>
+      <footer>
+        Internal review data, decisions, reasons, and audit records stay in
+        <code>review-data/internal - DO NOT RELEASE/</code>. Back up this folder
+        securely. Downloaded volume ZIPs exclude internal records and original
+        attachments. No generated output is approved for release.
+      </footer>
+    </main>
+  </body>
+</html>

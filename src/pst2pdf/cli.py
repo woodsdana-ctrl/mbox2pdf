@@ -626,7 +626,8 @@ def _plan_with_front_matter(
     return plan, front_pdf
 
 
-def build_volumes(extract_root: Path, output_dir: Path, options: Options, work: Path) -> dict:
+def build_volumes(extract_root: Path, output_dir: Path, options: Options, work: Path, *,
+                  prepared_models: list[MessageModel] | None = None, intake_stats: dict | None = None) -> dict:
     """The default pipeline: extracted tree -> review volumes in *output_dir*.
     With ``--triage``: triage-copy volumes, the original files, and the index."""
     if options.triage:
@@ -647,7 +648,10 @@ def build_volumes(extract_root: Path, output_dir: Path, options: Options, work: 
     stats["started"] = datetime.now().astimezone()
 
     stage("Reading messages")
-    if options.input_format == "mbox":
+    if prepared_models is not None:
+        models = prepared_models
+        stats.update(intake_stats or {})
+    elif options.input_format == "mbox":
         from . import mbox
         models = mbox.read(extract_root, work / "intake", stats, options.display_timezone)
     else:

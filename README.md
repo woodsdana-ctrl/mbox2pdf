@@ -6,8 +6,8 @@ given. Every message becomes pages in a volume, with its converted
 attachments directly behind it, and the output carries an index, a START HERE
 guide, and a word list Acrobat’s Search & Redact can import. Before a full
 run, `--survey` counts the pages and `--triage` lets the reviewers decide
-which attachments to produce at all. Runs in a Docker container with no
-network access.
+which attachments to produce at all. PDF conversion runs in a Docker container
+with no network access.
 
 It is built for responding to a records or discovery request: someone exports
 the search results from Microsoft 365 (or any mail system that writes .pst
@@ -15,6 +15,32 @@ files), pst2pdf converts the export, and reviewers who are not necessarily
 technical redact the result in Acrobat. Every output decision is judged by
 whether it shortens that redaction pass, and whether an unredacted copy of a
 name could survive anywhere outside visible page content.
+
+## Local browser review
+
+To review and exclude messages before producing PDFs, start Docker Desktop and
+run this command in the project folder (macOS/Linux or Windows WSL):
+
+```bash
+bash mbox2pdf-review.sh
+```
+
+Open **http://127.0.0.1:8765**. Import one or more MBOX files, filter/search the
+message list, read messages, and use Include/Exclude with optional reasons.
+Decisions save locally and apply to each deduplicated message and all its copies.
+Select the current page or explicitly select all filtered results; filtering
+alone never changes decisions. Bulk changes can be undone. Before generation,
+confirm the included/excluded totals and output options. Only included messages
+enter the PDF pipeline; Bates ranges and attachment cross-references are rebuilt.
+
+See **[the staff browser guide](docs/REVIEW.md)** for Windows PowerShell commands,
+resuming a review, storage paths, survey/triage, advanced settings and security.
+The worker runs without a network; the browser service is exposed only on
+localhost. All assets and processing stay local. Review state, exclusion logs,
+source copies and per-run audits live in the gitignored `review-data/internal -
+DO NOT RELEASE/` directory. Downloads include volume PDFs only. Included replies
+can still quote excluded messages. Continue your existing review and redaction
+workflow on the generated volumes; no new redaction step is introduced here.
 
 ## Gmail MBOX quick start
 
