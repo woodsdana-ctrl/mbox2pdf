@@ -177,6 +177,12 @@ def test_http_safety_and_inert_preview(http_server,tmp_path):
     session=json.load(request('/api/session'))
     for headers in ({'Host':'evil.example'},{'Origin':'http://evil.example'},{'Sec-Fetch-Site':'cross-site'}):
         with pytest.raises(urllib.error.HTTPError):request('/api/session',headers=headers)
+    navigation = {'Sec-Fetch-Site':'cross-site','Sec-Fetch-Mode':'navigate','Sec-Fetch-Dest':'document'}
+    with request('/', headers=navigation) as response:
+        assert response.status == 200 and 'text/html' in response.headers['Content-Type']
+    for path in ('/api/session', '/app.js'):
+        with pytest.raises(urllib.error.HTTPError):request(path, headers=navigation)
+    with pytest.raises(urllib.error.HTTPError):request('/', headers={'Sec-Fetch-Site':'cross-site'})
     with pytest.raises(urllib.error.HTTPError):request('/api/import',b'{}',{'Content-Type':'application/json'})
     with request('/') as response:
         assert "frame-src 'none'" in response.headers['Content-Security-Policy']

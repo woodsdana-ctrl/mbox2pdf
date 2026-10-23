@@ -35,7 +35,14 @@ def make_server(root, host='127.0.0.1', port=8765):
             origin = self.headers.get('Origin')
             if origin and origin != 'http://' + authority:
                 raise ValueError('Cross-origin access is blocked')
-            if self.headers.get('Sec-Fetch-Site') == 'cross-site':
+            # Following a link may mark the initial document navigation cross-site.
+            # Allow only the inert app shell; API access still requires same-site requests.
+            app_navigation = (
+                self.command == 'GET' and self.path == '/'
+                and self.headers.get('Sec-Fetch-Mode') == 'navigate'
+                and self.headers.get('Sec-Fetch-Dest') == 'document'
+            )
+            if self.headers.get('Sec-Fetch-Site') == 'cross-site' and not app_navigation:
                 raise ValueError('Cross-site access is blocked')
             if mutate and not hmac.compare_digest(self.headers.get('X-Review-Token', ''), token):
                 raise ValueError('Session token missing; reload the page')
